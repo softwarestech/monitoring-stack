@@ -1,0 +1,23 @@
+# Route every alert to one receiver. Replace the webhook URL with your
+# Slack incoming webhook, or swap in email / PagerDuty / Opsgenie configs:
+# https://prometheus.io/docs/alerting/latest/configuration/#receiver
+route:
+  receiver: team
+  group_by: [alertname, instance]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: team
+    slack_configs:
+      - api_url: https://hooks.slack.com/services/REPLACE/ME/PLEASE
+        channel: "#alerts"
+        send_resolved: true
+        title: '{{ if eq .Status "firing" }}🔴{{ else }}✅{{ end }} {{ .CommonLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ "\n" }}{{ end }}'
+
+inhibit_rules:
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: [alertname, instance]
